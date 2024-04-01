@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full flex flex-col border-r border-gray-200 overflow-y-hidden bg-zinc-100">
+  <div class="h-full flex w-full flex-col border-r border-gray-200 overflow-y-hidden bg-zinc-100">
     <div class="border-b">
       <a class="cursor-pointer flex items-center gap-x-4 px-6 py-5 text-sm font-semibold leading-6 text-gray-900 hover:bg-gray-50"
         @click.prevent="emits('add')">
