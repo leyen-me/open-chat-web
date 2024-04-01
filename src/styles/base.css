@@ -1,6 +1,5 @@
 :root {
-  --c-color-2: #999999;
-  --el-border-radius-base: 0px !important;
+  --el-border-radius-base: 8px !important;
   --el-color-primary: rgb(79, 70, 229) !important;
   --el-color-primary-light-3: rgb(100, 92, 237) !important;
 }
@@ -20,16 +19,6 @@ body,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 }
 
-.chat-active {
-  background-color: #eee;
-  border: solid 1px var(--el-color-primary) !important;
-  /* color: var(--el-color-primary) !important; */
-}
-
-.chat-active:hover .chat-delete {
-  display: block !important;
-}
-
 ::-webkit-scrollbar {
   display: none;
 }
@@ -38,20 +27,12 @@ li {
   list-style: none;
 }
 
-/* .copy {
-  display: none;
-} */
-
-/* #messages li:hover .copy {
-  display: block;
-} */
-
 .copy-button {
   background-color: transparent;
   border: none;
   padding: 0;
   margin: 0;
-  cursor: pointer; 
+  cursor: pointer;
   outline: none;
   color: inherit;
   font: inherit;
@@ -61,8 +42,5 @@ li {
 @media screen and (max-width: 1000px) {
   .el-dialog {
     width: 90%;
-  }
-  .menu-button {
-    display: flex !important;
   }
 }

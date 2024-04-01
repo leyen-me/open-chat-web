@@ -103,12 +103,14 @@ import {
   useChatCodeAutoRunApi,
   useChatSaveApi,
   useChatResumeApi,
+  useChatCodePkgApi,
 } from "@/api/chat";
 import { useContextListApi, useContextSaveApi } from "@/api/context";
 import { BASE_URL } from "@/constants";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { useUserStore } from "@/stores/modules/userStore";
 import { nanoid } from "nanoid";
+import useDownload from "@/hooks/useDownload.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -124,7 +126,9 @@ const isNewChat = () => {
 
 const scrollBottom = (time = 500) => {
   nextTick(() => {
-    window.scrollTo(0, document.body.scrollHeight);
+    const messagesElement = document.querySelector("#messages")
+    messagesElement.scrollTo(0, messagesElement.scrollHeight)
+    window.scrollTo(0, document.body.scrollHeight)
   });
 };
 
@@ -160,6 +164,11 @@ window.handleCodeCopy = async (event) => {
 const dialogCodeVisible = ref(false);
 const dialogCodeResult = ref("");
 window.handleRun = (event) => {
+
+  // 创建文件
+  // 打包文件
+  // 下载链接
+
   const language = event.parentElement.getAttribute("code-language");
   const code = event.parentElement.previousElementSibling.innerText;
   switch (language) {
@@ -191,9 +200,35 @@ window.handleRun = (event) => {
   }
 };
 
+
+window.handlePkg = (event) => {
+  const language = event.parentElement.getAttribute("code-language");
+  const code = event.parentElement.previousElementSibling.innerText;
+  ElMessageBox.confirm("打包为exe程序?", "提示", {
+    confirmButtonText: "确定",
+    cancelButtonText: "取消",
+    type: "warning",
+  })
+    .then(async () => {
+      try {
+        const response = await useChatCodePkgApi({
+          code,
+        });
+        ElMessage.success("打包成功");
+        useDownload({ url: "/chat/code/pkg/download/", data: { file_name: response.data } })()
+      } catch (error) {
+        console.log(error);
+        ElMessage.error("打包失败");
+      }
+    })
+}
+
+
+
 const handleCopy = window.handleCopy
 const handleCodeCopy = window.handleCopy
 const handleRun = window.handleRun
+const handlePkg = window.handlePkg
 
 
 const chatId = ref("");
@@ -255,8 +290,11 @@ const renderer = {
       (language === "python"
         ? `<button class="copy-button" onclick="handleRun(this)">测试</button>`
         : "") +
+      (language === "python"
+        ? `<button class="copy-button" onclick="handlePkg(this)">打包</button>`
+        : "") +
       `</div>` +
-      `</pre>` + `<HelloWorld></HelloWorld>`;
+      `</pre>`;
     return html;
   },
   link(link, t, name) {
@@ -436,19 +474,20 @@ const onSend = async () => {
 
 const handleReSend = async () => {
   let stop = false;
+  const answer_options = {
+    id: String(Math.random()),
+    role: "assistant",
+    content: "",
+  };
+  messages.value.push(answer_options);
+  const answer = messages.value.find(
+    (context) => context.id == answer_options.id
+  );
+  scrollBottom();
+
   try {
     // 临时
     loading.value = true;
-    const answer_options = {
-      id: String(Math.random()),
-      role: "assistant",
-      content: "",
-    };
-    messages.value.push(answer_options);
-    const answer = messages.value.find(
-      (context) => context.id == answer_options.id
-    );
-    scrollBottom();
 
     // 真实
     const controller = new AbortController();
@@ -504,7 +543,9 @@ const handleReSend = async () => {
           role: answer.role,
           status: 0,
         });
-      } catch (error2) { }
+      } catch (error2) {
+        console.log(error2);
+      }
     }
 
     getData(chatId.value);

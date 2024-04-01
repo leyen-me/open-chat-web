@@ -5,5 +5,5 @@ export const useContextListApi = (chat_id) => {
 };
 
 export const useContextSaveApi = (data) => {
-  return service.get("/context/", data);
+  return service.post("/context/", data);
 };
