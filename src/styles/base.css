@@ -38,13 +38,13 @@ li {
   list-style: none;
 }
 
-.copy {
+/* .copy {
   display: none;
-}
+} */
 
-#messages li:hover .copy {
+/* #messages li:hover .copy {
   display: block;
-}
+} */
 
 .copy-button {
   background-color: transparent;
