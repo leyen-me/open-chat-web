@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full p-5 flex flex-col relative lg:px-16 xl:px-60">
+  <div class="h-full p-5 flex flex-col relative overflow-hidden lg:px-16 xl:px-60">
 
     <!-- 选择专家类型 -->
     <div class="pb-5 flex justify-between">
@@ -124,10 +124,7 @@ const isNewChat = () => {
 
 const scrollBottom = (time = 500) => {
   nextTick(() => {
-    const element = $(`#messages`);
-    element
-      .stop()
-      .animate({ scrollTop: element.prop("scrollHeight") + 1000 }, time);
+    window.scrollTo(0, document.body.scrollHeight);
   });
 };
 
