@@ -2,7 +2,7 @@
     .markdown-body,
     [data-theme="dark"] {
       /*dark*/
-      color-scheme: dark;
+      /* color-scheme: dark;
       --color-prettylights-syntax-comment: #8b949e;
       --color-prettylights-syntax-constant: #79c0ff;
       --color-prettylights-syntax-entity: #d2a8ff;
@@ -51,7 +51,7 @@
       --color-danger-fg: #f85149;
       --color-danger-emphasis: #da3633;
       --color-done-fg: #a371f7;
-      --color-done-emphasis: #8957e5;
+      --color-done-emphasis: #8957e5; */
     }
   }
   
