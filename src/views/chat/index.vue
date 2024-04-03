@@ -9,7 +9,7 @@
     </div>
 
     <!-- 没有任何聊天对话的时候 -->
-    <div v-if="chatLoading" class="flex items-center justify-center h-4/5">
+    <div v-show="chatLoading && messages.length <= 0" class="flex items-center justify-center h-4/5">
       <div class="flex flex-col items-center">
         <div class="w-12 h-12 flex items-center justify-center border rounded-full">
           <svg width="41" height="41" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-8"
@@ -27,7 +27,7 @@
     </div>
 
     <!-- 没有任何聊天对话的时候 -->
-    <div v-else-if="messages.length <= 0" class="flex items-center justify-center h-4/5">
+    <div v-show="!chatLoading && messages.length <= 0" class="flex items-center justify-center h-4/5">
       <div class="flex flex-col items-center">
         <div class="w-12 h-12 flex items-center justify-center border rounded-full">
           <svg width="41" height="41" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg" class="w-8"
@@ -45,7 +45,7 @@
     </div>
 
     <!-- 聊天对话 -->
-    <ul v-else class="group flex-1 overflow-y-auto pb-24" id="messages" ref="messagesRef">
+    <ul v-show="messages.length > 0" class="group flex-1 overflow-y-auto pb-24" id="messages" ref="messagesRef">
       <li class="relative pb-4" v-for="(v, k) in messages" :key="v.id">
         <el-avatar shape="square" class="rounded-md"
           :style="{ 'background-color': v.role === 'user' ? '#c0c4cc' : 'var(--el-color-primary)' }">
@@ -63,12 +63,13 @@
 
     <!-- 发送框 -->
     <footer class="w-full fixed py-4 px-5 flex items-end left-0 bottom-0 lg:px-16 lg:absolute xl:px-60">
-      <el-input :input-style="{
+      <div class="flex-1 relative">
+        <el-input :input-style="{
         padding: '9.5px 12px',
         'border-radius': '12px',
-
-      }" v-model="prompt" type="textarea" placeholder="Enter 发送; shift + Enter换行" @keydown.enter="sendMessage"
-        :autosize="{ minRows: 1, maxRows: 8 }"></el-input>
+      }" v-model="prompt" type="textarea" @keydown.enter="sendMessage" placeholder="Enter 发送; Shift+Enter 换行;" :autosize="{ minRows: 1, maxRows: 8 }">
+        </el-input>
+      </div>
       <el-button class="rounded-full ml-3" type="primary" @click="onSend" size="large">{{ loading ? "停止" : "发送"
         }}</el-button>
     </footer>
@@ -111,6 +112,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { useUserStore } from "@/stores/modules/userStore";
 import { nanoid } from "nanoid";
 import useDownload from "@/hooks/useDownload.js";
+import usePkg from "@/hooks/usePkg.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -126,6 +128,10 @@ const isNewChat = () => {
 
 const scrollBottom = (time = 500) => {
   nextTick(() => {
+    // 用户正在滚动，请勿滚动了
+    if (wheel.value) {
+      return
+    }
     const messagesElement = document.querySelector("#messages")
     messagesElement.scrollTo(0, messagesElement.scrollHeight)
     window.scrollTo(0, document.body.scrollHeight)
@@ -201,26 +207,24 @@ window.handleRun = (event) => {
 };
 
 
-window.handlePkg = (event) => {
+window.handlePkg = async (event) => {
   const language = event.parentElement.getAttribute("code-language");
   const code = event.parentElement.previousElementSibling.innerText;
-  ElMessageBox.confirm("打包为exe程序?", "提示", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
-  })
-    .then(async () => {
-      try {
-        const response = await useChatCodePkgApi({
-          code,
-        });
-        ElMessage.success("打包成功");
-        useDownload({ url: "/chat/code/pkg/download/", data: { file_name: response.data } })()
-      } catch (error) {
-        console.log(error);
-        ElMessage.error("打包失败");
-      }
+  const { pkgId } = await usePkg({ code })
+  if (pkgId) {
+    ElMessageBox.confirm("打包完成，是否下载该程序?", "提示", {
+      confirmButtonText: "下载",
+      cancelButtonText: "取消",
+      type: "warning",
     })
+      .then(async () => {
+        try {
+          useDownload({ url: "/chat/code/pkg/download/", data: { file_name: pkgId.value } })()
+        } catch (error) {
+          ElMessage.error("下载失败");
+        }
+      })
+  }
 }
 
 
@@ -240,6 +244,7 @@ const prompt = ref("");
 const typeList = ref([]);
 const typeCode = ref("");
 const dialogGptsVisible = ref(false);
+const wheel = ref(false);
 
 const typeName = computed(() => {
   const _type = typeList.value.find((t) => t.code === typeCode.value);
@@ -248,6 +253,11 @@ const typeName = computed(() => {
   }
   return "未选择";
 });
+
+function handleWheel(event) {
+  wheel.value = true
+}
+
 
 const getTypeData = async () => {
   try {
@@ -344,6 +354,9 @@ const handleCodeAutoRun = async () => {
 };
 
 const onSend = async () => {
+  const messagesId = document.getElementById("messages")
+  messagesId.addEventListener('wheel', handleWheel);
+
   // 停止对话
   if (loading.value) {
     loading.value = false;
@@ -433,6 +446,8 @@ const onSend = async () => {
     ElMessage.error("回答错误");
   } finally {
     loading.value = false;
+    messagesId.removeEventListener('wheel', handleWheel);
+    wheel.value = false;
 
     // 主动停止，保存记录
     if (stop) {
@@ -473,6 +488,8 @@ const onSend = async () => {
 };
 
 const handleReSend = async () => {
+  const messagesId = document.getElementById("messages")
+  messagesId.addEventListener('wheel', handleWheel);
   let stop = false;
   const answer_options = {
     id: String(Math.random()),
@@ -533,6 +550,8 @@ const handleReSend = async () => {
     ElementPlus.ElMessage.error("回答错误");
   } finally {
     loading.value = false;
+    messagesId.removeEventListener('wheel', handleWheel);
+    wheel.value = false;
 
     // 主动停止，保存记录
     if (stop) {
@@ -564,4 +583,7 @@ onMounted(async () => {
     }
   });
 });
+
+
+
 </script>

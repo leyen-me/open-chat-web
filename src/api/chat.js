@@ -8,6 +8,10 @@ export const useChatDeleteAllApi = () => {
   return service.delete("/chat/all");
 };
 
+export const useChatDeleteApi = (chat_id) => {
+  return service.delete("/chat/" + chat_id);
+};
+
 export const useChatInfoApi = (chat_id) => {
   return service.get("/chat/" + chat_id);
 };
