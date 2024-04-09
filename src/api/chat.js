@@ -24,10 +24,6 @@ export const useChatCodePkgApi = (data) => {
   return service.post("/chat/code/pkg", data);
 };
 
-export const useChatCodeAutoRunApi = (chat_id) => {
-  return service.post("/chat/code/auto/run/" + chat_id);
-};
-
 export const useChatSaveApi = (data) => {
   return service.post("/chat/", data);
 };

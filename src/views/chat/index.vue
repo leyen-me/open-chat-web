@@ -45,8 +45,8 @@
     </div>
 
     <!-- 聊天对话 -->
-    <ul v-show="messages.length > 0" class="group flex-1 overflow-y-auto pb-24" id="messages" ref="messagesRef">
-      <li class="relative pb-4" v-for="(v, k) in messages" :key="v.id">
+    <ul v-show="messages.length > 0" class="flex-1 overflow-y-auto pb-24" id="messages" ref="messagesRef">
+      <li class="relative pb-4 group" v-for="(v, k) in messages" :key="v.id">
         <el-avatar shape="square" class="rounded-md"
           :style="{ 'background-color': v.role === 'user' ? '#c0c4cc' : 'var(--el-color-primary)' }">
           {{ v.role === "user" ? "我" : "AI" }}
@@ -54,6 +54,7 @@
         <article :class="[v.role === 'user' ? 'bg-zinc-100 m-5 rounded-md' : 'bg-white m-0']" class="markdown-body p-5"
           v-html="marked2Html(v.content)"></article>
         <div v-if="!loading" class="absolute bottom-0 right-5 flex justify-end mt-3 h-8">
+          <el-button v-if="v.role !== 'user'" class="hidden group-hover:block">耗时：{{ v.execution_time }}ms</el-button>
           <el-button icon="CopyDocument" circle class="hidden group-hover:block"
             @click="handleCopy(v.content)"></el-button>
           <el-button icon="Refresh" circle v-if="k === messages.length - 1" @click="handleReSend"></el-button>
@@ -73,13 +74,6 @@
       <el-button class="rounded-full ml-3" type="primary" @click="onSend" size="large">{{ loading ? "停止" : "发送"
         }}</el-button>
     </footer>
-
-    <el-dialog v-model="dialogCodeVisible" title="代码运行结果" width="800" @close="dialogCodeResult = ''">
-      <article class="markdown-body" v-html="marked2Html(dialogCodeResult)"></article>
-      <div v-if="dialogCodeResult.includes('代码运行失败')" style="display: flex; justify-content: flex-end">
-        <el-button @click="handleFixCode">修复代码</el-button>
-      </div>
-    </el-dialog>
 
     <el-dialog v-model="dialogGptsVisible" title="选择专家类型" width="800">
       <el-button :type="typeCode === v.code ? 'primary' : 'default'" v-for="(v, k) in typeList" :key="v.id"
@@ -101,7 +95,6 @@ import "highlight.js/styles/github.css";
 import {
   useChatInfoApi,
   useChatCodeRunApi,
-  useChatCodeAutoRunApi,
   useChatSaveApi,
   useChatResumeApi,
   useChatCodePkgApi,
@@ -165,47 +158,6 @@ window.handleCodeCopy = async (event) => {
   const code = event.parentElement.previousElementSibling.innerText;
   handleCopy(code);
 };
-
-
-const dialogCodeVisible = ref(false);
-const dialogCodeResult = ref("");
-window.handleRun = (event) => {
-
-  // 创建文件
-  // 打包文件
-  // 下载链接
-
-  const language = event.parentElement.getAttribute("code-language");
-  const code = event.parentElement.previousElementSibling.innerText;
-  switch (language) {
-    case "python":
-      ElMessageBox.confirm("确定运行该代码吗?", "提示", {
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
-        type: "warning",
-      })
-        .then(async () => {
-          dialogCodeVisible.value = true;
-          try {
-            const response = await useChatCodeRunApi({
-              language,
-              code,
-            });
-            dialogCodeResult.value = response.data;
-            ElMessage.success("代码运行成功");
-          } catch (error) {
-            dialogCodeResult.value = "代码运行失败:\n" + error.message;
-            ElMessage.error("代码运行失败");
-          }
-        })
-        .catch(() => { });
-      break;
-    default:
-      ElMessage.warning("暂不支持该语言的运行");
-      break;
-  }
-};
-
 
 window.handlePkg = async (event) => {
   const language = event.parentElement.getAttribute("code-language");
@@ -298,9 +250,6 @@ const renderer = {
       `<div class="copy" code-language="${language}" style="position: absolute;top: 12px;right: 12px;">` +
       `<button class="copy-button" onclick="handleCodeCopy(this)">复制</button>` +
       (language === "python"
-        ? `<button class="copy-button" onclick="handleRun(this)">测试</button>`
-        : "") +
-      (language === "python"
         ? `<button class="copy-button" onclick="handlePkg(this)">打包</button>`
         : "") +
       `</div>` +
@@ -317,12 +266,6 @@ const marked2Html = (md) => {
   return marked.parse(md);
 };
 
-const handleFixCode = () => {
-  prompt.value = "代码运行失败，请修复一下，失败原因:" + dialogCodeResult.value;
-  dialogCodeVisible.value = false;
-  onSend();
-};
-
 const handleSelectType = (_type) => {
   dialogGptsVisible.value = false;
   typeCode.value = _type.code;
@@ -336,21 +279,6 @@ const sendMessage = async (event) => {
     }
     return;
   }
-};
-
-const handleCodeAutoRun = async () => {
-  const item = typeList.value.find((item) => typeCode.value === item.code);
-  if (!item) {
-    return;
-  }
-  if (!item.code_auto_run) {
-    return;
-  }
-  // 自动运行代码
-  try {
-    const response = await useChatCodeAutoRunApi(chatId.value);
-    getData(chatId.value);
-  } catch (error) { }
 };
 
 const onSend = async () => {
@@ -432,15 +360,13 @@ const onSend = async () => {
         break;
       }
       const str = decoder.decode(value);
-      answer.content += str;
+      answer.content += str
       count.value++;
       if (count.value >= 10) {
         count.value = 0;
         scrollBottom(0);
       }
     }
-
-    handleCodeAutoRun();
   } catch (error) {
     console.log("回答错误", error);
     ElMessage.error("回答错误");
@@ -543,8 +469,6 @@ const handleReSend = async () => {
         scrollBottom(0);
       }
     }
-
-    handleCodeAutoRun();
   } catch (error) {
     console.log("回答错误", error);
     ElementPlus.ElMessage.error("回答错误");
