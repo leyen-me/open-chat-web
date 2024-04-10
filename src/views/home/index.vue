@@ -53,7 +53,7 @@
       </el-text>
     </div>
 
-    <main class="w-0 flex-1" :key>
+    <main class="flex-1 lg:w-0" :key>
       <RouterView />
     </main>
   </div>
