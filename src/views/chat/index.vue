@@ -51,8 +51,11 @@
           :style="{ 'background-color': v.role === 'user' ? '#c0c4cc' : 'var(--el-color-primary)' }">
           {{ v.role === "user" ? "我" : "AI" }}
         </el-avatar>
-        <article :class="[v.role === 'user' ? 'bg-zinc-100 m-5 rounded-md' : 'bg-white m-0']" class="markdown-body p-5"
-          v-html="marked2Html(v.content)"></article>
+
+        <article v-if="v.role === 'user'" class="markdown-body p-5 bg-zinc-100 m-5 rounded-md"
+          v-text="v.content"></article>
+        <article v-else class="markdown-body p-5 bg-white m-0" v-html="marked2Html(v.content)"></article>
+
         <div v-if="!loading" class="absolute bottom-0 right-5 flex justify-end mt-3 h-8">
           <el-button v-if="v.role !== 'user'" class="hidden group-hover:block">耗时：{{ v.execution_time }}ms</el-button>
           <el-button icon="CopyDocument" circle class="hidden group-hover:block"
@@ -66,9 +69,10 @@
     <footer class="w-full fixed py-4 px-5 flex items-end left-0 bottom-0 lg:px-16 lg:absolute xl:px-60">
       <div class="flex-1 relative">
         <el-input :input-style="{
-        padding: '9.5px 12px',
-        'border-radius': '12px',
-      }" v-model="prompt" type="textarea" @keydown.enter="sendMessage" placeholder="Enter 发送; Shift+Enter 换行;" :autosize="{ minRows: 1, maxRows: 8 }">
+          padding: '9.5px 12px',
+          'border-radius': '12px',
+        }" v-model="prompt" type="textarea" @keydown.enter="sendMessage" placeholder="Enter 发送; Shift+Enter 换行;"
+          :autosize="{ minRows: 1, maxRows: 8 }">
         </el-input>
       </div>
       <el-button class="rounded-full ml-3" type="primary" @click="onSend" size="large">{{ loading ? "停止" : "发送"
